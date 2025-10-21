@@ -1,78 +1,90 @@
-pipeline {
-  agent any
-
-  environment {
-    DOCKER_USER    = "phucjunior"   // TODO: sửa
-    BACKEND_IMAGE  = "backend"
-    FRONTEND_IMAGE = "frontend"
-    DEPLOY_DIR     = "/opt/deploy/app"
-  }
-
-  options {
-    skipDefaultCheckout(true)
-    timestamps()
-    ansiColor('xterm')
-  }
-
-  stages {
-    stage('Checkout') {
-      steps {
-        checkout([$class: 'GitSCM',
-          branches: [[name: '*/main']],
-          userRemoteConfigs: [[
-            url: 'https://github.com/dangvanphuc1710/jenkins.git', // TODO: sửa
-            credentialsId: 'github-pat'
-          ]]
-        ])
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>React + Vite Demo</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #ff5f6d, #ffc371);
+        font-family: "Poppins", sans-serif;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
       }
-    }
 
-    stage('Build Backend Docker') {
-      steps {
-        sh """
-          docker build \
-            -t docker.io/${DOCKER_USER}/${BACKEND_IMAGE}:latest \
-            -f backend/backend.Dockerfile .
-        """
+      header {
+        margin-top: 40px;
+        text-align: center;
       }
-    }
 
-    stage('Build Frontend Docker') {
-      steps {
-        sh """
-          docker build \
-            -t docker.io/${DOCKER_USER}/${FRONTEND_IMAGE}:latest \
-            -f frontend/Dockerfile .
-        """
+      header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+        text-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
       }
-    }
 
-    stage('Push to Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
-          sh """
-            echo \$PASS | docker login -u \$USER --password-stdin
-            docker push docker.io/${DOCKER_USER}/${BACKEND_IMAGE}:latest
-            docker push docker.io/${DOCKER_USER}/${FRONTEND_IMAGE}:latest
-          """
-        }
+      header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
       }
-    }
 
-    stage('Deploy (same host)') {
-      steps {
-        // đảm bảo compose có bản mới nhất
-        sh """
-          mkdir -p ${DEPLOY_DIR}
-        """
-        // docker-compose.yml đã đặt sẵn ở /opt/deploy/app theo bước 1.3
-        sh """
-          cd ${DEPLOY_DIR} && \
-          docker compose pull && \
-          docker compose up -d && \
-          docker image prune -f
-        """
+      .card {
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        margin-top: 40px;
+        text-align: center;
+        width: 90%;
+        max-width: 500px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
       }
-    }
-  }
-}
+
+      .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+      }
+
+      .card img {
+        width: 100%;
+        height: auto;
+        border-radius: 15px;
+      }
+
+      footer {
+        margin-top: auto;
+        padding: 20px;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🌈 React + Vite Demo</h1>
+      <p>Một ví dụ giao diện đơn giản nhưng tinh tế</p>
+    </header>
+
+    <div class="card">
+      <img
+        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToDdv4NABHVobtwzwqxgn3TDstEIGL9g2wRQ&s"
+        alt="Tokuda meme vui nhộn"
+      />
+    </div>
+
+    <div id="root"></div>
+
+    <footer>
+      <p>© 2025 React + Vite Demo | Thiết kế bởi ChatGPT ✨</p>
+    </footer>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
