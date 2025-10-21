@@ -7,7 +7,7 @@ import os
 
 app = FastAPI(title="Demo API (FastAPI + Postgres)")
 
-# CORS cho dev nếu cần
+# Cho phép frontend gọi API
 origins = [os.getenv("CORS_ORIGINS", "http://localhost")]
 app.add_middleware(
     CORSMiddleware,

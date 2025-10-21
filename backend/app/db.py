@@ -14,7 +14,7 @@ def init_db():
     with engine.begin() as conn:
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS items (
-          id SERIAL PRIMARY KEY,
-          title VARCHAR(200) NOT NULL
+            id SERIAL PRIMARY KEY,
+            title VARCHAR(200) NOT NULL
         );
         """))
