@@ -1,14 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from sqlalchemy import text
-from .db import engine, init_db
-import os
+from .db import init_db
+from .routers import users, products
 
-app = FastAPI(title="Demo API (FastAPI + Postgres)")
+app = FastAPI(title="Shop API")
+origins = ["*"]  # adjust for production
 
-# CORS cho dev nếu cần
-origins = [os.getenv("CORS_ORIGINS", "http://localhost")]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -17,27 +14,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class ItemIn(BaseModel):
-    title: str
+app.include_router(users.router)
+app.include_router(products.router)
 
 @app.on_event("startup")
-def on_startup():
+def startup():
     init_db()
 
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-
-@app.get("/api/items")
-def list_items():
-    with engine.connect() as conn:
-        rows = conn.execute(text("SELECT id, title FROM items ORDER BY id DESC")).mappings().all()
-        return {"items": list(rows)}
-
-@app.post("/api/items", status_code=201)
-def create_item(item: ItemIn):
-    if not item.title.strip():
-        raise HTTPException(status_code=400, detail="Title is required.")
-    with engine.begin() as conn:
-        conn.execute(text("INSERT INTO items(title) VALUES(:t)"), {"t": item.title})
-    return {"message": "created"}
