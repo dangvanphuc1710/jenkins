@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000";
+const API_URL = "http://54.163.18.105:8000";
 
 export async function apiRegister(username: string, password: string) {
   const res = await fetch(`${API_URL}/api/register`, {
