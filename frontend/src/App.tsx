@@ -1,64 +1,76 @@
 import React, { useEffect, useState } from "react";
+import { apiRegister, apiLogin, apiGetProducts, apiAddProduct } from "./api";
 
 export default function App() {
-  const [health, setHealth] = useState<string>("checking...");
-  const [items, setItems] = useState<{ id: number; title: string }[]>([]);
+  const [user, setUser] = useState<string | null>(localStorage.getItem("token"));
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [products, setProducts] = useState<{id:number, title:string, price:number}[]>([]);
   const [title, setTitle] = useState("");
+  const [price, setPrice] = useState("");
 
-  async function refresh() {
-    const h = await fetch("/api/health")
-      .then((r) => r.json())
-      .catch(() => ({ status: "fail" }));
-    setHealth(h.status ?? "fail");
-
-    const it = await fetch("/api/items")
-      .then((r) => r.json())
-      .catch(() => ({ items: [] }));
-    setItems(it.items || []);
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await apiRegister(username, password);
+    alert(res.detail || "Đăng ký thành công!");
   }
 
-  async function addItem(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return;
-    await fetch("/api/items", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title }),
-    });
+    const res = await apiLogin(username, password);
+    if (res.access_token) {
+      localStorage.setItem("token", res.access_token);
+      setUser(res.access_token);
+    } else {
+      alert(res.detail || "Sai tài khoản hoặc mật khẩu!");
+    }
+  }
+
+  async function loadProducts() {
+    if (!user) return;
+    const res = await apiGetProducts(user);
+    setProducts(res.products || []);
+  }
+
+  async function addProduct(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !title.trim()) return;
+    await apiAddProduct(user, title, parseFloat(price));
     setTitle("");
-    refresh();
+    setPrice("");
+    loadProducts();
   }
 
   useEffect(() => {
-    refresh();
-  }, []);
+    if (user) loadProducts();
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div style={{maxWidth:400,margin:"80px auto",fontFamily:"system-ui"}}>
+        <h2>Đăng nhập hoặc Đăng ký</h2>
+        <form onSubmit={handleLogin} style={{display:"flex",flexDirection:"column",gap:8}}>
+          <input placeholder="Username" value={username} onChange={e=>setUsername(e.target.value)} />
+          <input placeholder="Password" type="password" value={password} onChange={e=>setPassword(e.target.value)} />
+          <button type="submit">Đăng nhập</button>
+        </form>
+        <button onClick={handleRegister} style={{marginTop:10}}>Đăng ký</button>
+      </div>
+    );
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: 720,
-        margin: "40px auto",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <h1>React + Vite + FastAPI + Postgres</h1>
-      <p>
-        Backend health: <b>{health}</b>
-      </p>
-      <form onSubmit={addItem} style={{ display: "flex", gap: 8 }}>
-        <input
-          placeholder="New item title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          style={{ flex: 1, padding: 8 }}
-        />
-        <button type="submit">Add</button>
+    <div style={{maxWidth:700,margin:"40px auto",fontFamily:"system-ui"}}>
+      <h1>Quản lý sản phẩm</h1>
+      <button onClick={()=>{localStorage.removeItem("token");setUser(null);}}>Đăng xuất</button>
+      <form onSubmit={addProduct} style={{display:"flex",gap:8,marginTop:20}}>
+        <input placeholder="Tên sản phẩm" value={title} onChange={e=>setTitle(e.target.value)} style={{flex:1}} />
+        <input placeholder="Giá" value={price} onChange={e=>setPrice(e.target.value)} style={{width:100}} />
+        <button type="submit">Thêm</button>
       </form>
       <ul>
-        {items.map((i) => (
-          <li key={i.id}>
-            #{i.id}: {i.title}
-          </li>
+        {products.map(p => (
+          <li key={p.id}>#{p.id} - {p.title} ({p.price}₫)</li>
         ))}
       </ul>
     </div>
