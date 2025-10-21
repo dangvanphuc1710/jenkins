@@ -74,7 +74,7 @@
 
     <div class="card">
       <img
-        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToDdv4NABHVobtwzwqxgn3TDstEIGL9g2wRQ&s"
+        src="https://www.anhnghethuatdulich.com/wp-content/uploads/2025/09/tokuda-meme-hai-huoc-cho-thay-ngay-ca-khoanh-khac-binh-thuong-cung-du-de-viral.jpg"
         alt="Tokuda meme vui nhộn"
       />
     </div>
