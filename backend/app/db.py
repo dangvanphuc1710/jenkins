@@ -12,9 +12,24 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def init_db():
     with engine.begin() as conn:
+        # Giữ nguyên bảng items của bạn
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS items (
             id SERIAL PRIMARY KEY,
             title VARCHAR(200) NOT NULL
         );
         """))
+        
+        # === BẮT ĐẦU CODE THÊM MỚI ===
+        # Thêm bảng "user" (giống trong ảnh pgAdmin của bạn)
+        conn.execute(text("""
+        CREATE TABLE IF NOT EXISTS "user" (
+            id SERIAL PRIMARY KEY,
+            username VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            seller BOOLEAN DEFAULT false,
+            admin BOOLEAN DEFAULT false,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        """))
+        # === KẾT THÚC CODE THÊM MỚI ===
