@@ -3,12 +3,5 @@ uvicorn==0.30.6
 SQLAlchemy==2.0.35
 psycopg2-binary==2.9.9
 python-dotenv==1.0.1
-passlib[bcrypt]==1.7.4  # <-- THÊM DÒNG NÀY
-python-jose==3.3.0       # <-- THÊM DÒNG NÀY (cho JWT token)
-
-[cite_start]fastapi==0.115.0 [cite: 102]
-[cite_start]uvicorn==0.30.6 [cite: 103]
-[cite_start]SQLAlchemy==2.0.35 [cite: 104]
-[cite_start]psycopg2-binary==2.9.9 [cite: 105]
-[cite_start]python-dotenv==1.0.1 [cite: 106]
-
+passlib[bcrypt]==1.7.4
+python-jose==3.3.0

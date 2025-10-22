@@ -12,7 +12,6 @@ engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 def init_db():
     with engine.begin() as conn:
-        # Giữ nguyên bảng items của bạn
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS items (
             id SERIAL PRIMARY KEY,
@@ -20,8 +19,7 @@ def init_db():
         );
         """))
         
-        # === BẮT ĐẦU CODE THÊM MỚI ===
-        # Thêm bảng "user" (giống trong ảnh pgAdmin của bạn)
+        # Thêm bảng "user"
         conn.execute(text("""
         CREATE TABLE IF NOT EXISTS "user" (
             id SERIAL PRIMARY KEY,
@@ -32,4 +30,3 @@ def init_db():
             created_at TIMESTAMPTZ DEFAULT NOW()
         );
         """))
-        # === KẾT THÚC CODE THÊM MỚI ===

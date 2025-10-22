@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 
 # --- Cấu hình ---
 SECRET_KEY = "day-la-khoa-bi-mat-cua-ban-va-nen-duoc-thay-doi"
-ALGORITHM = "HS260"
+ALGORITHM = "HS256" # <-- ĐÃ SỬA LỖI (TRƯỚC LÀ HS260)
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # --- Khởi tạo ---

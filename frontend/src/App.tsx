@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 
 // === API Helpers (Tách ra cho dễ quản lý) ===
 async function apiRegister(username: string, password: string) {
-    // URL /api/register sẽ được Nginx proxy sang backend:8000
     const res = await fetch("/api/register", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
@@ -12,12 +11,11 @@ async function apiRegister(username: string, password: string) {
 }
 
 async function apiLogin(username: string, password: string) {
-    // Backend dùng OAuth2PasswordRequestForm, nên phải gửi dạng form-data
     const body = new URLSearchParams();
     body.append('username', username);
     body.append('password', password);
     
-    const res = await fetch("/api/token", { // URL /api/token
+    const res = await fetch("/api/token", {
         method: "POST",
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: body
@@ -26,14 +24,14 @@ async function apiLogin(username: string, password: string) {
 }
 
 async function apiGetItems(token: string) {
-     const res = await fetch("/api/items", { // URL /api/items
+     const res = await fetch("/api/items", {
          headers: { Authorization: `Bearer ${token}` }
      });
      return res.json();
 }
 
 async function apiAddItem(token: string, title: string) {
-    await fetch("/api/items", { // URL /api/items
+    await fetch("/api/items", {
         method: "POST",
         headers: {
             "Content-Type":"application/json",
@@ -46,17 +44,13 @@ async function apiAddItem(token: string, title: string) {
 
 
 export default function App() {
-  // State cho auth
   const [token, setToken] = useState<string | null>(localStorage.getItem("token"));
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  
-  // State cho items (giống code cũ)
   const [health, setHealth] = useState<string>("checking...");
   const [items, setItems] = useState<{id:number, title:string}[]>([]);
   const [title, setTitle] = useState("");
 
-  // === Hàm xử lý Auth ===
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -93,23 +87,19 @@ export default function App() {
   function handleLogout() {
       localStorage.removeItem("token");
       setToken(null);
-      setItems([]); // Xóa danh sách items cũ
+      setItems([]);
   }
 
-  // === Hàm xử lý Items (giống code cũ, nhưng dùng token) ===
   async function refresh() {
-    if (!token) return; // Không có token thì không refresh
+    if (!token) return;
     
-    // Check health (không cần token)
     const h = await fetch("/api/health").then(r=>r.json()).catch(()=>({status:"fail"}));
     setHealth(h.status ?? "fail");
     
-    // Lấy items (cần token)
     try {
         const it = await apiGetItems(token);
         setItems(it.items || []);
     } catch (err) {
-        // Có thể token hết hạn
         alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
         handleLogout();
     }
@@ -127,13 +117,11 @@ export default function App() {
       if (token) {
         refresh();
       }
-      // Giữ dòng này để linter (vạch vàng) không báo lỗi
       // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
   
   // === GIAO DIỆN ===
   
-  // 1. Nếu CHƯA đăng nhập (không có token)
   if (!token) {
     return (
         <div style={{maxWidth: 400, margin: "80px auto", fontFamily: "system-ui, sans-serif"}}>
@@ -148,7 +136,6 @@ export default function App() {
     );
   }
   
-  // 2. Nếu ĐÃ đăng nhập (có token)
   return (
     <div style={{maxWidth: 720, margin: "40px auto", fontFamily: "system-ui, sans-serif"}}>
       <button onClick={handleLogout} style={{float: 'right'}}>Đăng xuất</button>
