@@ -18,15 +18,3 @@ def init_db():
             title VARCHAR(200) NOT NULL
         );
         """))
-        
-        # Thêm bảng "user"
-        conn.execute(text("""
-        CREATE TABLE IF NOT EXISTS "user" (
-            id SERIAL PRIMARY KEY,
-            username VARCHAR(100) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            seller BOOLEAN DEFAULT false,
-            admin BOOLEAN DEFAULT false,
-            created_at TIMESTAMPTZ DEFAULT NOW()
-        );
-        """))
