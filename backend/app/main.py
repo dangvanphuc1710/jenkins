@@ -21,7 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 
 # --- CORS Middleware ---
-origins_str = os.getenv("CORS_ORIGINS", "http://localhost,http://54.163.18.105")
+origins_str = os.getenv("CORS_ORIGINS", "http://localhost")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins_str.split(','),
