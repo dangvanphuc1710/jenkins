@@ -1,127 +1,132 @@
-from fastapi import FastAPI, HTTPException, Depends
-from fastapi.middleware.cors import CORSMiddleware
+# Trong file backend/app/main.py
+
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from sqlalchemy import text
-from .db import engine, init_db
-import os
+from typing import Optional
+
+# Import các thành phần từ file db.py của bạn (Giả định)
+# Bạn CẦN CHỈNH SỬA phần này để khớp với file db.py và models.py của bạn
+from . import db  # Giả sử db.py chứa logic session và models
+# from . import models # Giả sử bạn có file models.py định nghĩa User
+
+# --- Giả định cấu trúc model và DB Session (Bạn cần thay thế bằng code thật của mình) ---
+# Đây CHỈ LÀ VÍ DỤ để code chạy được
+# Giả sử bạn có model User trong file models.py
+# class User(Base):
+#     __tablename__ = "users"
+#     id = Column(Integer, primary_key=True, index=True)
+#     username = Column(String, unique=True, index=True)
+#     hashed_password = Column(String)
+
+# Giả sử bạn có hàm get_db trong db.py
+def get_db():
+    database = db.SessionLocal() # Giả sử SessionLocal từ db.py
+    try:
+        yield database
+    finally:
+        database.close()
+# --- Hết phần giả định ---
+
+
+# Thư viện bảo mật
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
-# --- Cấu hình ---
-SECRET_KEY = "day-la-khoa-bi-mat-cua-ban-va-nen-duoc-thay-doi"
-ALGORITHM = "HS260"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+# Cấu hình bảo mật
+PWD_CONTEXT = CryptContext(schemes=["bcrypt"], deprecated="auto")
+SECRET_KEY = "YOUR_VERY_SECRET_KEY"  # <-- THAY BẰNG MỘT KHÓA BÍ MẬT MẠNH
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# --- Khởi tạo ---
-app = FastAPI(title="Demo API (FastAPI + Postgres)")
+app = FastAPI() # Giả sử app của bạn được khởi tạo ở đây
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
-
-# --- CORS Middleware ---
-origins_str = os.getenv("CORS_ORIGINS", "http://localhost")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins_str.split(','),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
-
-# --- Pydantic Models ---
-class ItemIn(BaseModel):
-    title: str
-
-class UserIn(BaseModel):
+# --- Schemas (Pydantic Models) ---
+class UserCreate(BaseModel):
     username: str
     password: str
 
-# --- Helper functions (Hàm hỗ trợ Auth) ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# --- Hàm Hỗ trợ Bảo mật ---
 def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
+    return PWD_CONTEXT.verify(plain_password, hashed_password)
 
 def get_password_hash(password):
-    return pwd_context.hash(password)
+    return PWD_CONTEXT.hash(password)
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Token không hợp lệ (sub)")
-        return username
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Token không hợp lệ (jwt error)")
+# Hàm (giả định) để lấy user từ DB
+def get_user(db: Session, username: str):
+    # Thay thế 'models.User' bằng model User thật của bạn
+    # return db.query(models.User).filter(models.User.username == username).first()
+    
+    # ---- GIẢ ĐỊNH ----
+    # Đây là code giả định, BẠN PHẢI THAY BẰNG TRUY VẤN DB THẬT
+    if username == "testuser":
+        return {"username": "testuser", "hashed_password": get_password_hash("testpass")}
+    return None
+    # ------------------
 
-# --- Sự kiện Startup ---
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
-# --- API Endpoints ---
-
-@app.get("/api/health")
-def health():
-    return {"status": "ok"}
-
-@app.post("/api/register")
-def register(user: UserIn):
+# === ENDPOINT ĐĂNG KÝ ===
+@app.post("/register", status_code=status.HTTP_201_CREATED)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    # 1. Kiểm tra xem user đã tồn tại chưa
+    db_user = get_user(db, username=user.username)
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+    
+    # 2. Mã hóa mật khẩu
     hashed_password = get_password_hash(user.password)
-    try:
-        with engine.begin() as conn:
-            conn.execute(
-                text("""INSERT INTO "user" (username, password) VALUES (:u, :p)"""),
-                {"u": user.username, "p": hashed_password}
-            )
-        return {"detail": "Đăng ký thành công"}
-    except Exception as e:
-        if "unique constraint" in str(e).lower():
-             raise HTTPException(status_code=400, detail="Username đã tồn tại")
-        raise HTTPException(status_code=500, detail=f"Lỗi server: {e}")
+    
+    # 3. Tạo user mới (Bạn cần thay 'models.User' bằng model của bạn)
+    # db_user_obj = models.User(username=user.username, hashed_password=hashed_password)
+    # db.add(db_user_obj)
+    # db.commit()
+    # db.refresh(db_user_obj)
+    
+    # Code giả định (xóa đi khi có DB thật)
+    print(f"Đã tạo user: {user.username} với hash: {hashed_password}")
+    
+    return {"username": user.username, "message": "User created successfully"}
 
-@app.post("/api/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    with engine.connect() as conn:
-        res = conn.execute(
-            text("""SELECT * FROM "user" WHERE username = :u"""),
-            {"u": form_data.username}
-        ).mappings().first()
+# === ENDPOINT ĐĂNG NHẬP (Tạo Token) ===
+@app.post("/token", response_model=Token)
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # 1. Lấy user từ DB
+    user = get_user(db, form_data.username)
     
-    if not res:
-        raise HTTPException(status_code=400, detail="Sai username hoặc password")
-    
-    if not verify_password(form_data.password, res['password']):
-        raise HTTPException(status_code=400, detail="Sai username hoặc password")
-    
+    # 2. Xác thực
+    if not user or not verify_password(form_data.password, user["hashed_password"]): # Sửa user.hashed_password nếu dùng model thật
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+    # 3. Tạo token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": res['username']}, expires_delta=access_token_expires
+        data={"sub": user["username"]}, expires_delta=access_token_expires # Sửa user.username nếu dùng model thật
     )
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
-# --- API Protected (Bắt buộc đăng nhập) ---
-
-@app.get("/api/items")
-def list_items(current_user: str = Depends(get_current_user)):
-    with engine.connect() as conn:
-        rows = conn.execute(text("SELECT id, title FROM items ORDER BY id DESC")).mappings().all()
-        return {"items": list(rows)}
-
-@app.post("/api/items", status_code=201)
-def create_item(item: ItemIn, current_user: str = Depends(get_current_user)):
-    if not item.title.strip():
-        raise HTTPException(status_code=400, detail="Title is required.")
-    with engine.begin() as conn:
-        conn.execute(text("INSERT INTO items(title) VALUES(:t)"), {"t": item.title})
-    return {"message": "created"}
+# (Thêm các endpoint khác của bạn ở đây...)
